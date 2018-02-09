@@ -23,8 +23,9 @@ import os
 
 from ..node import NodeInventory
 from ..node.inventory import read_inventory_file_to_dict
-from ..clouddrivers import OpenStackDriver
+from ..clouddrivers import DindDriver
 from ..execute import RemoteExecutor
+from ..execute import DockerExecutor
 from ..k8s import K8sClient, K8sInventory
 from .pscmd import PSCmd
 from ..policy import PolicyRunner
@@ -83,10 +84,22 @@ def main(argv):
     )
 
     # cloud driver related config
-    cloud_options = prog.add_mutually_exclusive_group(required=False)
+    cloud_options = prog.add_argument_group('Cloud settings')
+    cloud_options.add_argument('--cloud-driver',
+        default="dind",
+        help="specify cloud driver",
+    )
     cloud_options.add_argument('--open-stack-cloud',
         default=os.environ.get("OPENSTACK_CLOUD"),
         help="the name of the open stack cloud from your config file to use",
+    )
+    cloud_options.add_argument('--base-url',
+        default="unix:///var/run/docker.sock",
+        help="the url connect to docker daemon, used with dind driver",
+    )
+    cloud_options.add_argument('--filter-name',
+        default="stability-v1.7",
+        help="this string is used to filter dind containers, used with dind driver",
     )
 
     # KUBERNETES CONFIG
@@ -129,11 +142,26 @@ def main(argv):
     logger = logging.getLogger(__name__)
     logger.setLevel(log_level)
 
+    # create an executor
+    executor = RemoteExecutor(
+        user=args.remote_user,
+        ssh_allow_missing_host_keys=args.ssh_allow_missing_host_keys,
+    )
+
     # build cloud inventory
     logger.debug("Fetching the remote nodes")
-    driver = OpenStackDriver(
-        cloud=args.open_stack_cloud,
-    )
+    if args.cloud_driver == 'dind':
+        driver = DindDriver(
+            base_url=args.base_url,
+            filters={"name": args.filter_name}
+        )
+        executor = DockerExecutor(driver.cli)
+    elif args.cloud_driver == 'openstack':
+        driver = OpenStackDriver(
+            cloud=args.open_stack_cloud,
+        )
+    else:
+        raise ValueError("Invalid parameter value")
 
     # build a k8s client
     kube_config = args.kube_config
@@ -158,12 +186,6 @@ def main(argv):
         restrict_to_groups=groups_to_restrict_to,
     )
     inventory.sync()
-
-    # create an executor
-    executor = RemoteExecutor(
-        user=args.remote_user,
-        ssh_allow_missing_host_keys=args.ssh_allow_missing_host_keys,
-    )
 
     if args.interactive:
         # create a command parser

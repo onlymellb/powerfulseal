@@ -15,3 +15,4 @@
 
 
 from .remote_executor import RemoteExecutor
+from .docker_executor import DockerExecutor

@@ -16,3 +16,4 @@
 
 from .driver import AbstractDriver
 from .open_stack_driver import OpenStackDriver
+from .dind_driver import DindDriver
