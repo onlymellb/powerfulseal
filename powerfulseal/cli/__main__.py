@@ -165,7 +165,7 @@ def main(argv):
 
     # build a k8s client
     kube_config = args.kube_config
-    logger.debug("Creating kubernetes client with config %d", kube_config)
+    logger.debug("Creating kubernetes client with config %s", kube_config)
     k8s_client = K8sClient(kube_config=kube_config)
     k8s_inventory = K8sInventory(k8s_client=k8s_client)
 
