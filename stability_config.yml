@@ -1,0 +1,107 @@
+config:
+  minSecondsBetweenRuns: 60
+  maxSecondsBetweenRuns: 360
+
+# the scenarios describing actions on nodes
+nodeScenarios:
+
+  # policy using al the filters available
+  - name: "kill pd nodes"
+
+    # Choose the initial set of nodes to operate on.
+    # Note that this will be an union of all the notes you match (logical OR)
+    match:
+      - property:
+          name: "name"
+          value: "stability-v1.7-*"
+      - property:
+          name: "state"
+          value: "UP"
+
+    # The filters are executed in the order specified and can be
+    # used mutiple times, and piped from one to the next.
+    filters:
+
+      # property filters (all the property filters support regexp)
+      - property:
+          name: "group"
+          value: "pd"
+
+      # time of execution filters
+      # to restrict the actions to work days, you can do
+      - dayTime:
+          onlyDays:
+            - "tuesday"
+            - "thursday"
+            - "saturday"
+          startTime:
+            hour: 0
+            minute: 0
+            second: 1
+          endTime:
+            hour: 23
+            minute: 59
+            second: 59
+
+      # to pick a random sample of nodes/pods, you can specify either a size
+      - randomSample:
+          size: 1
+
+    # The actions will be executed in the order specified
+    actions:
+      - stop:
+          force: false
+      - wait:
+          seconds: 3600
+      - start:
+
+  # policy using al the filters available
+  - name: "kill tikv nodes"
+
+    # Choose the initial set of nodes to operate on.
+    # Note that this will be an union of all the notes you match (logical OR)
+    match:
+      - property:
+          name: "name"
+          value: "stability-v1.7-*"
+      - property:
+          name: "state"
+          value: "UP"
+
+    # The filters are executed in the order specified and can be
+    # used mutiple times, and piped from one to the next.
+    filters:
+
+      # property filters (all the property filters support regexp)
+      - property:
+          name: "group"
+          value: "tikv"
+
+      # time of execution filters
+      # to restrict the actions to work days, you can do
+      - dayTime:
+          onlyDays:
+            - "monday"
+            - "wednesday"
+            - "friday"
+            - "sunday"
+          startTime:
+            hour: 0
+            minute: 0
+            second: 1
+          endTime:
+            hour: 23
+            minute: 59
+            second: 59
+
+      # to pick a random sample of nodes/pods, you can specify either a size
+      - randomSample:
+          size: 1
+
+    # The actions will be executed in the order specified
+    actions:
+      - stop:
+          force: false
+      - wait:
+          seconds: 3600
+      - start:
